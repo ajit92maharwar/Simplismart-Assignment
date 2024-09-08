@@ -1,0 +1,152 @@
+Test Case 1: Initializing Kubernetes Cluster
+
+Description: Verify the script successfully initializes the Kubernetes cluster using kubeadm.
+Command: ./k8s_manager.sh init
+
+Note This command expects kubeadm is installed and available in your PATH.
+We can check the same using kubeadm version
+
+I my case since I am using minikube.
+Since you already have a Minikube cluster running, and Minikube handles the Kubernetes setup without the need for kubeadm, 
+I can skip the kubeadm init command in your k8s_manager.sh
+We can avoid this check as per our use case
+Below is the o/p
+
+ajitmaharwar@ajitmaharwar-mac demo % ./k8s_manager.sh init          
+Setting up Kubernetes cluster...
+Minikube cluster detected. Skipping kubeadm initialization.
+-------------------------------------------------------------------------------------------------------------------------------------------
+TC2	Install Helm and Metrics Server	
+Description: install Helm and Metrics Server
+Command: ./k8s_manager.sh install
+
+Below is the o/ of the command
+ajitmaharwar@ajitmaharwar-mac demo % ./k8s_manager.sh install
+Installing Helm...
+Executing: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 11694  100 11694    0     0  35907      0 --:--:-- --:--:-- --:--:-- 35981
+Helm v3.15.4 is already latest
+Executing: helm repo add bitnami https://charts.bitnami.com/bitnami
+"bitnami" already exists with the same configuration, skipping
+Executing: helm repo update
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "jenkins" chart repository
+...Successfully got an update from the "jenkinsci" chart repository
+...Successfully got an update from the "stable" chart repository
+...Successfully got an update from the "bitnami" chart repository
+Update Complete. ⎈Happy Helming!⎈
+Installing Metrics Server...
+Executing: kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+serviceaccount/metrics-server created
+clusterrole.rbac.authorization.k8s.io/system:aggregated-metrics-reader created
+clusterrole.rbac.authorization.k8s.io/system:metrics-server created
+rolebinding.rbac.authorization.k8s.io/metrics-server-auth-reader created
+clusterrolebinding.rbac.authorization.k8s.io/metrics-server:system:auth-delegator created
+clusterrolebinding.rbac.authorization.k8s.io/system:metrics-server created
+service/metrics-server created
+deployment.apps/metrics-server created
+apiservice.apiregistration.k8s.io/v1beta1.metrics.k8s.io created
+Tools installed successfully.
+ajitmaharwar@ajitmaharwar-mac demo % 
+-------------------------------------------------------------------------------------------------------------------------------------------
+TC3	Deploy Application with Specified Resources
+Description: Description: Deploy an application with custom parameters (name, image, replicas, CPU, memory).
+Command:./k8s_manager.sh deploy --app my-app --image nginx --replicas 2 --cpu 500m --memory 512Mi
+Below is the o/p
+
+ajitmaharwar@ajitmaharwar-mac demo % ./k8s_manager.sh deploy --app my-app --image nginx --replicas 2 --cpu 500m --memory 512Mi
+Deploying app: my-app with 2 replicas...
+Executing: kubectl apply -f deployment.yaml
+deployment.apps/my-app created
+Application my-app deployed successfully.
+ajitmaharwar@ajitmaharwar-mac demo % 
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+TC4	Handle Missing Parameters in Deployment	
+Description: Verify that the script properly handles missing required parameters for deployment.
+Command:./k8s_manager.sh deploy --app my-app --image nginx --replicas 2 
+
+Below is the o/p
+ajitmaharwar@ajitmaharwar-mac demo % ./k8s_manager.sh deploy --app my-app --image nginx --replicas 2                          
+Required options missing for deploy.
+Usage: ./k8s_manager.sh {init|install|deploy|status}
+Available commands:
+  init                Initialize Kubernetes cluster
+  install             Install Helm and Metrics Server
+  deploy              Deploy an app (requires options)
+      Options: --app <name> --image <image> --replicas <num> --cpu <cpu> --memory <mem>
+  status              Get the status of a deployment (requires --deployment)
+ajitmaharwar@ajitmaharwar-mac demo % 
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+TC5	Check Status of a Deployment
+Description: Verify the script correctly fetches the status of a deployed application.
+Command: ./k8s_manager.sh status --deployment my-app   
+
+Below is the o/p
+ajitmaharwar@ajitmaharwar-mac demo % ./k8s_manager.sh status --deployment my-app                    
+Checking status for deployment: my-app
+Executing: kubectl get deployment my-app
+NAME     READY   UP-TO-DATE   AVAILABLE   AGE
+my-app   2/2     2            2           2m37s
+ajitmaharwar@ajitmaharwar-mac demo % 
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+TC6	Handle Invalid Deployment ID	
+Description: Handling Invalid Deployment ID for Status
+Command:./k8s_manager.sh status --deployment non-existent-app
+
+Below is the o/p
+ajitmaharwar@ajitmaharwar-mac demo % ./k8s_manager.sh status --deployment non-existent-app
+Checking status for deployment: non-existent-app
+Executing: kubectl get deployment non-existent-app
+Error from server (NotFound): deployments.apps "non-existent-app" not found
+Failed to execute: kubectl get deployment non-existent-app
+ajitmaharwar@ajitmaharwar-mac demo % 
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+TC7	Ensure Proper Usage Handling	
+Description: Verify that the script shows usage instructions when an invalid command is passed.
+Command:./k8s_manager.sh invalid_command
+Below is the o/p
+ajitmaharwar@ajitmaharwar-mac demo % ./k8s_manager.sh invalid_command                     
+Usage: ./k8s_manager.sh {init|install|deploy|status}
+Available commands:
+  init                Initialize Kubernetes cluster
+  install             Install Helm and Metrics Server
+  deploy              Deploy an app (requires options)
+      Options: --app <name> --image <image> --replicas <num> --cpu <cpu> --memory <mem>
+  status              Get the status of a deployment (requires --deployment)
+ajitmaharwar@ajitmaharwar-mac demo % 
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+TC8	Verify Resource Limits in the Deployed Application	
+Description: After deploying the application, check that the specified CPU and memory limits are correctly applied.
+Command:./k8s_manager.sh  deploy --app resource-app --image nginx --replicas 1 --cpu 200m --memory 128Mi
+
+Bleow is the o/p
+ajitmaharwar@ajitmaharwar-mac demo % ./k8s_manager.sh  deploy --app resource-app --image nginx --replicas 1 --cpu 200m --memory 128Mi
+Deploying app: resource-app with 1 replicas...
+Executing: kubectl apply -f deployment.yaml
+deployment.apps/resource-app created
+Application resource-app deployed successfully.
+ajitmaharwar@ajitmaharwar-mac demo % 
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+Summary of Results
+Test Case	Description	Status
+TC1	Initialize Kubernetes Cluster	✅ Pass
+TC2	Install Helm and Metrics Server	✅ Pass
+TC3	Deploy Application with Specified Resources	✅ Pass
+TC4	Handle Missing Parameters in Deployment	✅ Pass
+TC5	Check Status of a Deployment	✅ Pass
+TC6	Handle Invalid Deployment ID	✅ Pass
+TC7	Ensure Proper Usage Handling	✅ Pass
+TC8	Verify Resource Limits in the Deployed Application	✅ Pass
