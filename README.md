@@ -63,7 +63,7 @@ my-app    2/2     2            2           5m
 -------------------------------------------------------------------------------------------------------------------------------------------
 Test Case 6: Handling Invalid Deployment ID for Status
 Description: Verify the script handles non-existent or invalid deployment IDs gracefully.
-Command:./k8s_deployment.sh status --deployment non-existent-app
+Command:./k8s_manager.sh status --deployment non-existent-app
 Expected Result:
 
     The script should attempt to fetch the status and return an error message.
@@ -76,17 +76,17 @@ Error running command: kubectl get deployment non-existent-app
 
 Test Case 7: Ensure Proper Usage Handling
 Description: Verify that the script shows usage instructions when an invalid command is passed.
-Command:./k8s_deployment.sh invalid_command
+Command:./k8s_manager.sh invalid_command
 
 Expected Result:
 
     The script should display the usage instructions.
     The output should display:
-    Usage: ./k8s_deployment.sh {init|install|deploy|status}
+    Usage: ./k8s_manager.sh {init|install|deploy|status}
 -------------------------------------------------------------------------------------------------------------------------------------------
 Test Case 8: Verify Resource Limits in the Deployed Application
 Description: After deploying the application, check that the specified CPU and memory limits are correctly applied.
-Command: ./k8s_deployment.sh deploy --app resource-app --image nginx --replicas 1 --cpu 200m --memory 128Mi
+Command: ./k8s_manager.sh deploy --app resource-app --image nginx --replicas 1 --cpu 200m --memory 128Mi
 Expected Result:
 
     The application resource-app should be deployed with 1 replica.
