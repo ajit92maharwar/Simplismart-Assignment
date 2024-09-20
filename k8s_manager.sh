@@ -30,43 +30,38 @@ install_tools() {
     echo "Tools installed successfully."
 }
 
-# Deploy a specified application to the Kubernetes cluster
+# Deploy an application to the Kubernetes cluster using provided YAML files
 deploy_application() {
-    app="$1"
-    container_image="$2"
-    num_replicas="$3"
-    cpu_limit="$4"
-    memory_limit="$5"
+    deployment_file="$1"
+    service_file="$2"
+    hpa_file="$3"
 
-    echo "Deploying app: $app with $num_replicas replicas..."
+    # Deploy application using the deployment YAML file if provided
+    if [[ -f "$deployment_file" ]]; then
+        echo "Deploying application using file: $deployment_file"
+        execute_command "kubectl apply -f $deployment_file"
+        echo "Application deployed successfully."
+    else
+        echo "Deployment YAML file not found or not provided."
+    fi
 
-    # Generate deployment file
-    cat <<EOF > deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: $app
-spec:
-  replicas: $num_replicas
-  selector:
-    matchLabels:
-      app: $app
-  template:
-    metadata:
-      labels:
-        app: $app
-    spec:
-      containers:
-      - name: $app
-        image: $container_image
-        resources:
-          limits:
-            cpu: $cpu_limit
-            memory: $memory_limit
-EOF
+    # Deploy service using the service YAML file if provided
+    if [[ -f "$service_file" ]]; then
+        echo "Deploying service using file: $service_file"
+        execute_command "kubectl apply -f $service_file"
+        echo "Service deployed successfully."
+    else
+        echo "Service YAML file not found or not provided."
+    fi
 
-    execute_command "kubectl apply -f deployment.yaml"
-    echo "Application $app deployed successfully."
+    # Deploy HPA using the HPA YAML file if provided
+    if [[ -f "$hpa_file" ]]; then
+        echo "Deploying HPA using file: $hpa_file"
+        execute_command "kubectl apply -f $hpa_file"
+        echo "HPA deployed successfully."
+    else
+        echo "HPA YAML file not found or not provided."
+    fi
 }
 
 # Check the status of a specific deployment
@@ -82,8 +77,7 @@ show_help() {
     echo "Available commands:"
     echo "  init                Initialize Kubernetes cluster"
     echo "  install             Install Helm and Metrics Server"
-    echo "  deploy              Deploy an app (requires options)"
-    echo "      Options: --app <name> --image <image> --replicas <num> --cpu <cpu> --memory <mem>"
+    echo "  deploy              Deploy resources (requires --deploy-file, optional --service-file, --hpa-file)"
     echo "  status              Get the status of a deployment (requires --deployment)"
     exit 1
 }
@@ -98,26 +92,21 @@ case "$1" in
         ;;
     deploy)
         shift
+        deployment_file=""
+        service_file=""
+        hpa_file=""
         while [[ $# -gt 0 ]]; do
             case "$1" in
-                --app)
-                    app_name="$2"
+                --deploy-file)
+                    deployment_file="$2"
                     shift 2
                     ;;
-                --image)
-                    container_image="$2"
+                --service-file)
+                    service_file="$2"
                     shift 2
                     ;;
-                --replicas)
-                    replicas="$2"
-                    shift 2
-                    ;;
-                --cpu)
-                    cpu="$2"
-                    shift 2
-                    ;;
-                --memory)
-                    memory="$2"
+                --hpa-file)
+                    hpa_file="$2"
                     shift 2
                     ;;
                 *)
@@ -125,11 +114,11 @@ case "$1" in
                     ;;
             esac
         done
-        if [ -z "$app_name" ] || [ -z "$container_image" ] || [ -z "$replicas" ] || [ -z "$cpu" ] || [ -z "$memory" ]; then
-            echo "Required options missing for deploy."
+        if [ -z "$deployment_file" ]; then
+            echo "Required option --deploy-file missing."
             show_help
         fi
-        deploy_application "$app_name" "$container_image" "$replicas" "$cpu" "$memory"
+        deploy_application "$deployment_file" "$service_file" "$hpa_file"
         ;;
     status)
         shift
@@ -154,4 +143,3 @@ case "$1" in
         show_help
         ;;
 esac
-
